@@ -1,0 +1,30 @@
+# .NET / C# build outputs
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+.vs/
+
+# Python environments & caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.metrics/
+
+# Local game backups & caches (never commit copyrighted game files)
+orig_cache/
+backup_orig/
+ru_backup_orig/
+*.bundle
+catalog.bin
+resources.assets
+UserGameStatsSchema_*.bin
+Assembly-CSharp*.dll
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

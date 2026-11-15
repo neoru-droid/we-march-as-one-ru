@@ -1,0 +1,47 @@
+MIT License
+
+Copyright (c) 2026 neoru-droid
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software, localization data, and associated documentation files (the
+"Software"), to deal in the Software without restriction, including without
+limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom
+the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+OPEN-SOURCE FONT & LIBRARY NOTICES
+================================================================================
+
+The five Cyrillic-extended font files located in `fonts/` (`Anton-Regular.ttf`,
+`BigShouldersDisplay-ExtraBold.ttf`, `BigShouldersDisplay-Black.ttf`,
+`Sora-Regular.ttf`, and `Sora-Bold.ttf`) are derivative works distributed under
+the SIL Open Font License, Version 1.1 (https://openfontlicense.org):
+
+1. Big Shoulders Display
+   Copyright (c) 2019 Patric King, XO Type Co (https://xotype.co)
+   Licensed under the SIL Open Font License, Version 1.1.
+
+2. Anton
+   Copyright (c) 2011–2016 Vernon Adams
+   Licensed under the SIL Open Font License, Version 1.1.
+
+3. Sora (with Cyrillic glyph contours adapted from Inter)
+   Sora: Copyright (c) 2020 The Sora Project Authors / Barnbrook Fonts
+   Inter: Copyright (c) 2016–2024 The Inter Project Authors
+   Licensed under the SIL Open Font License, Version 1.1.
+
+4. Mono.Cecil (used by the IL patcher tool during installation)
+   Copyright (c) 2008–2015 Jb Evain, Copyright (c) 2008–2011 Novell, Inc.
+   Licensed under the MIT License.
