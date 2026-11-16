@@ -29,6 +29,7 @@
 
 <a id="support"></a>
 ## Поддержать
+- **[Boosty](https://boosty.to/cd_tixo)** (все релизы и выбор следующих игр)
 - **[Чаевые через CloudTips (СБП / карта)](https://pay.cloudtips.ru/p/240b8760)**
 
 Перевод сделан с нейросетью и вычитан в игре. Найдёте опечатку - пишите в [Issues](https://github.com/neoru-droid/we-march-as-one-ru/issues), поправлю.
