@@ -32,7 +32,7 @@
 - **[Boosty](https://boosty.to/cd_tixo)** (все релизы и выбор следующих игр)
 - **[Чаевые через CloudTips (СБП / карта)](https://pay.cloudtips.ru/p/240b8760)**
 
-Перевод сделан с нейросетью и вычитан в игре. Найдёте опечатку - пишите в [Issues](https://github.com/neoru-droid/we-march-as-one-ru/issues), поправлю.
+Перевод сделан с помощью нейросети и проверен в игре. Найдёте опечатку или косяк - пишите в [Issues](https://github.com/neoru-droid/we-march-as-one-ru/issues), поправлю.
 
 ## Другие переводы
 - [Frontier Tale](https://github.com/neoru-droid/frontier-tale-ru)
