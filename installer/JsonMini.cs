@@ -29,7 +29,15 @@ namespace WmaoRuInstaller
 
             string raw = File.ReadAllText(jsonPath, BinaryUtils.Utf8NoBom);
             Dictionary<string, object> root = JsonMini.ParseObject(raw);
+            return LoadFromRoot(root);
+        }
 
+        public static TranslationPayload LoadFromRoot(Dictionary<string, object> root)
+        {
+            if (root == null)
+            {
+                throw new ArgumentNullException("root");
+            }
             TranslationPayload payload = new TranslationPayload();
 
             Dictionary<string, object> tablesContainer = root;

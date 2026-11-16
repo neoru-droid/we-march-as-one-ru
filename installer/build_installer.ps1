@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$SrcDir,
-    [Parameter(Mandatory = $true)][string]$OutputExePath
+    [Parameter(Mandatory = $true)][string]$OutputExePath,
+    [string]$PayloadGzPath = ""
 )
 
 Set-StrictMode -Version Latest
@@ -21,6 +22,14 @@ if (-not [string]::IsNullOrWhiteSpace($outDir) -and -not (Test-Path -LiteralPath
     New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 }
 
+$resolvedPayload = $PayloadGzPath
+if ([string]::IsNullOrWhiteSpace($resolvedPayload)) {
+    $candidateGz = Join-Path $SrcDir "wmao_ru_payload.gz"
+    if (Test-Path -LiteralPath $candidateGz) {
+        $resolvedPayload = $candidateGz
+    }
+}
+
 $refDir = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319"
 $sources = @(
     "AssemblyInfo.cs",
@@ -32,6 +41,8 @@ $sources = @(
     "BundleStringPatcher.cs",
     "VdfSchemaPatcher.cs",
     "SteamLocator.cs",
+    "PayloadProvider.cs",
+    "InstallerDiagnostics.cs",
     "BackupManager.cs",
     "InstallerEngine.cs",
     "SetupForm.cs",
@@ -48,6 +59,13 @@ $cscArgs = @(
     "/target:winexe",
     "/out:$OutputExePath"
 )
+
+if (-not [string]::IsNullOrWhiteSpace($resolvedPayload)) {
+    if (-not (Test-Path -LiteralPath $resolvedPayload)) {
+        throw "Embedded payload file not found: $resolvedPayload"
+    }
+    $cscArgs += "/resource:$resolvedPayload,wmao_ru_payload.gz"
+}
 
 if ($useRoslyn) {
     $cscArgs += "/deterministic+"

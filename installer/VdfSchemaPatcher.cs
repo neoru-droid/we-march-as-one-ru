@@ -9,7 +9,13 @@ namespace WmaoRuInstaller
         private const byte TagMap = 0x00;
         private const byte TagString = 0x01;
         private const byte TagInt32 = 0x02;
+        private const byte TagFloat32 = 0x03;
+        private const byte TagPtr = 0x04;
+        private const byte TagWString = 0x05;
+        private const byte TagColor = 0x06;
+        private const byte TagUInt64 = 0x07;
         private const byte TagEnd = 0x08;
+        private const byte TagInt64 = 0x0A;
 
         private sealed class VdfNode
         {
@@ -18,6 +24,92 @@ namespace WmaoRuInstaller
             public List<VdfNode> MapChildren;
             public string StringValue;
             public int IntValue;
+            public byte[] RawBytes;
+        }
+
+        public static bool TryReadUserUnlockedCount(string statsFilePath, int totalCount, out int unlockedCount)
+        {
+            unlockedCount = 0;
+            try
+            {
+                byte[] raw = File.ReadAllBytes(statsFilePath);
+                if (raw == null || raw.Length == 0)
+                {
+                    return false;
+                }
+                int pos = 0;
+                List<VdfNode> root = ParseMap(raw, ref pos);
+                VdfNode cache = FindNodeCaseInsensitive(root, "cache", TagMap);
+                if (cache == null && root.Count == 1 && root[0].Tag == TagMap)
+                {
+                    cache = root[0];
+                }
+                if (cache == null || cache.MapChildren == null)
+                {
+                    return false;
+                }
+
+                VdfNode group = FindStatsGroup(cache.MapChildren);
+                if (group == null)
+                {
+                    return false;
+                }
+                VdfNode dataNode = FindNodeCaseInsensitive(group.MapChildren, "data", TagInt32);
+                uint mask = dataNode != null ? unchecked((uint)dataNode.IntValue) : 0u;
+                int limit = totalCount > 0 ? totalCount : 30;
+                int count = 0;
+                for (int b = 0; b < limit && b < 32; b++)
+                {
+                    if ((mask & (1u << b)) != 0u)
+                    {
+                        count++;
+                    }
+                }
+                unlockedCount = count;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static VdfNode FindStatsGroup(List<VdfNode> children)
+        {
+            string[] preferred = new string[] { "0", "1" };
+            for (int p = 0; p < preferred.Length; p++)
+            {
+                VdfNode cand = FindNodeCaseInsensitive(children, preferred[p], TagMap);
+                if (cand != null && FindNodeCaseInsensitive(cand.MapChildren, "data", TagInt32) != null)
+                {
+                    return cand;
+                }
+            }
+            for (int i = 0; i < children.Count; i++)
+            {
+                VdfNode child = children[i];
+                if (child.Tag == TagMap && FindNodeCaseInsensitive(child.MapChildren, "AchievementTimes", TagMap) != null)
+                {
+                    return child;
+                }
+            }
+            return null;
+        }
+
+        private static VdfNode FindNodeCaseInsensitive(List<VdfNode> entries, string key, byte tag)
+        {
+            if (entries == null)
+            {
+                return null;
+            }
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Tag == tag && string.Equals(entries[i].Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entries[i];
+                }
+            }
+            return null;
         }
 
         public static int PatchSchemaFile(
@@ -128,6 +220,41 @@ namespace WmaoRuInstaller
                     node.IntValue = BinaryUtils.ReadInt32LE(buf, pos);
                     pos += 4;
                 }
+                else if (tag == TagFloat32 || tag == TagPtr || tag == TagColor)
+                {
+                    if (pos + 4 > buf.Length)
+                    {
+                        throw new InvalidDataException("Обрыв 4-байтового поля VDF на смещении " + pos);
+                    }
+                    node.RawBytes = new byte[4];
+                    Buffer.BlockCopy(buf, pos, node.RawBytes, 0, 4);
+                    pos += 4;
+                }
+                else if (tag == TagUInt64 || tag == TagInt64)
+                {
+                    if (pos + 8 > buf.Length)
+                    {
+                        throw new InvalidDataException("Обрыв 8-байтового поля VDF на смещении " + pos);
+                    }
+                    node.RawBytes = new byte[8];
+                    Buffer.BlockCopy(buf, pos, node.RawBytes, 0, 8);
+                    pos += 8;
+                }
+                else if (tag == TagWString)
+                {
+                    int start = pos;
+                    while (pos + 1 < buf.Length && (buf[pos] != 0 || buf[pos + 1] != 0))
+                    {
+                        pos += 2;
+                    }
+                    if (pos + 1 >= buf.Length)
+                    {
+                        throw new InvalidDataException("Незакрытая UTF-16 строка в VDF.");
+                    }
+                    node.RawBytes = new byte[pos - start];
+                    Buffer.BlockCopy(buf, start, node.RawBytes, 0, pos - start);
+                    pos += 2;
+                }
                 else
                 {
                     throw new InvalidDataException("Неизвестный тег VDF 0x" + tag.ToString("x2") + " на смещении " + tagOffset);
@@ -164,6 +291,20 @@ namespace WmaoRuInstaller
                 else if (entry.Tag == TagInt32)
                 {
                     BinaryUtils.WriteInt32LE(ms, entry.IntValue);
+                }
+                else if (entry.Tag == TagFloat32 || entry.Tag == TagPtr || entry.Tag == TagColor)
+                {
+                    ms.Write(entry.RawBytes, 0, 4);
+                }
+                else if (entry.Tag == TagUInt64 || entry.Tag == TagInt64)
+                {
+                    ms.Write(entry.RawBytes, 0, 8);
+                }
+                else if (entry.Tag == TagWString)
+                {
+                    ms.Write(entry.RawBytes, 0, entry.RawBytes.Length);
+                    ms.WriteByte(0);
+                    ms.WriteByte(0);
                 }
                 else
                 {

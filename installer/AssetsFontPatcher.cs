@@ -57,6 +57,38 @@ namespace WmaoRuInstaller
         public static int PatchResourcesFile(string origResourcesPath, string fontsDir, string outResourcesPath)
         {
             Dictionary<string, byte[]> payloads = LoadFontPayloads(fontsDir);
+            return PatchResourcesWithLoadedMap(origResourcesPath, payloads, outResourcesPath);
+        }
+
+        public static int PatchResourcesFromFileBytes(
+            string origResourcesPath,
+            Dictionary<string, byte[]> fontFilesByFileName,
+            string outResourcesPath)
+        {
+            Dictionary<string, byte[]> payloads = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < FontSpecs.Length; i++)
+            {
+                string assetName = FontSpecs[i].Key;
+                string fileName = FontSpecs[i].Value;
+                byte[] bytes;
+                if (fontFilesByFileName == null || !fontFilesByFileName.TryGetValue(fileName, out bytes) || bytes == null)
+                {
+                    throw new FileNotFoundException("Отсутствует встроенный шрифт: " + fileName, fileName);
+                }
+                if (!HasValidFontMagic(bytes, 0, bytes.Length))
+                {
+                    throw new InvalidDataException("Повреждён заголовок шрифта TTF/OTF: " + fileName);
+                }
+                payloads[assetName] = bytes;
+            }
+            return PatchResourcesWithLoadedMap(origResourcesPath, payloads, outResourcesPath);
+        }
+
+        private static int PatchResourcesWithLoadedMap(
+            string origResourcesPath,
+            Dictionary<string, byte[]> payloads,
+            string outResourcesPath)
+        {
             byte[] rawAssets = File.ReadAllBytes(origResourcesPath);
             HashSet<string> matchedFonts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

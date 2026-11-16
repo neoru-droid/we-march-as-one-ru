@@ -10,9 +10,17 @@ using System.Windows.Forms;
 
 namespace WmaoRuInstaller
 {
+    internal enum GuiLaunchMode
+    {
+        Default = 0,
+        UacInstall = 1,
+        UacUninstall = 2
+    }
+
     internal sealed class SetupForm : Form
     {
-        private const string SupportUrl = "https://github.com/neoru-droid/we-march-as-one-ru#support";
+        public const string SupportUrl = "https://pay.cloudtips.ru/p/240b8760";
+        public const string GithubUrl = "https://github.com/neoru-droid/we-march-as-one-ru";
 
         private static readonly Color BgDark = Color.FromArgb(0x23, 0x21, 0x1C);
         private static readonly Color CardBg = Color.FromArgb(0x33, 0x35, 0x3D);
@@ -34,6 +42,8 @@ namespace WmaoRuInstaller
         private static readonly Color StatusWarn = Color.FromArgb(0xE0, 0x7A, 0x68);
 
         private readonly string _appBaseDir;
+        private readonly string _explicitSteamDir;
+        private readonly GuiLaunchMode _launchMode;
         private readonly float _scale;
 
         private Font _fontHeaderTitle;
@@ -54,10 +64,13 @@ namespace WmaoRuInstaller
         private TabletopButton _restoreBtn;
         private TextBox _logBox;
         private TabletopButton _supportBtn;
+        private TabletopButton _githubBtn;
 
         private string _pathBadgeText = "";
         private Color _pathBadgeColor = TextMuted;
         private bool _isBusy = false;
+        private bool _payloadValid = true;
+        private bool _uacAutoTriggered = false;
 
         private Rectangle _headerCardRect;
         private Rectangle _pathCardRect;
@@ -66,8 +79,25 @@ namespace WmaoRuInstaller
         private Rectangle _pathInputBorderRect;
 
         public SetupForm(string appBaseDir)
+            : this(appBaseDir, null, null, null, GuiLaunchMode.Default)
+        {
+        }
+
+        public SetupForm(string appBaseDir, string initialGameDir, bool? initialEnableAchievements)
+            : this(appBaseDir, initialGameDir, null, initialEnableAchievements, GuiLaunchMode.Default)
+        {
+        }
+
+        public SetupForm(
+            string appBaseDir,
+            string initialGameDir,
+            string explicitSteamDir,
+            bool? initialEnableAchievements,
+            GuiLaunchMode launchMode)
         {
             _appBaseDir = appBaseDir;
+            _explicitSteamDir = explicitSteamDir;
+            _launchMode = launchMode;
             _scale = DetectDpiScale();
 
             SetStyle(
@@ -83,7 +113,7 @@ namespace WmaoRuInstaller
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = BgDark;
             ForeColor = TextPrimary;
-            Text = "We March as One — Русификатор v1.0";
+            Text = "We March as One: Русификатор v1.1";
             ClientSize = new Size(S(696), S(564));
 
             _generatedIcon = BuildTacticalIcon();
@@ -94,7 +124,24 @@ namespace WmaoRuInstaller
 
             InitFonts();
             BuildLayout();
-            InitializePathAndLog();
+            InitializePathAndLog(initialGameDir, initialEnableAchievements);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            if (!_uacAutoTriggered)
+            {
+                _uacAutoTriggered = true;
+                if (_launchMode == GuiLaunchMode.UacInstall)
+                {
+                    BeginInvoke((MethodInvoker)delegate { StartInstallFlow(true); });
+                }
+                else if (_launchMode == GuiLaunchMode.UacUninstall)
+                {
+                    BeginInvoke((MethodInvoker)delegate { StartRestoreFlow(true); });
+                }
+            }
         }
 
         private int S(int px)
@@ -171,6 +218,7 @@ namespace WmaoRuInstaller
                 Font = _fontSecondaryBtn,
                 IsPrimary = false,
                 ScaleFactor = _scale,
+                SurfaceBehind = CardBg,
                 Bounds = new Rectangle(inputX + inputW + S(10), inputY, browseW, inputH)
             };
             _browseBtn.Click += OnBrowseClicked;
@@ -235,53 +283,122 @@ namespace WmaoRuInstaller
             };
             Controls.Add(_logBox);
 
-            int supportW = S(254);
-            int supportH = S(30);
-            _supportBtn = new TabletopButton
+            int footerY = S(520);
+            int footerH = S(30);
+            int githubW = S(96);
+            int supportW = S(196);
+
+            _githubBtn = new TabletopButton
             {
-                Text = "☕ Поддержать автора перевода",
+                Text = "GitHub",
                 Font = _fontSmall,
                 IsPrimary = false,
                 ScaleFactor = _scale,
-                Bounds = new Rectangle(ClientSize.Width - pad - supportW, S(520), supportW, supportH)
+                Bounds = new Rectangle(ClientSize.Width - pad - githubW, footerY, githubW, footerH)
+            };
+            _githubBtn.Click += OnGithubClicked;
+            Controls.Add(_githubBtn);
+
+            _supportBtn = new TabletopButton
+            {
+                Text = "Поддержать перевод",
+                Font = _fontSmall,
+                IsPrimary = false,
+                ScaleFactor = _scale,
+                Bounds = new Rectangle(ClientSize.Width - pad - githubW - S(10) - supportW, footerY, supportW, footerH)
             };
             _supportBtn.Click += OnSupportClicked;
             Controls.Add(_supportBtn);
         }
 
-        private void InitializePathAndLog()
+        private void InitializePathAndLog(string initialGameDir, bool? initialEnableAchievements)
         {
-            string detected = SteamLocator.TryAutoDetectGameDirectory(_appBaseDir);
-            if (!string.IsNullOrEmpty(detected))
+            PayloadValidationResult payloadCheck = InstallerDiagnostics.ValidatePayload(_appBaseDir);
+            _payloadValid = payloadCheck.IsValid;
+            if (!_payloadValid)
             {
-                _pathBox.Text = detected;
-                AppendLog("Папка игры найдена автоматически: " + detected);
-                if (BackupManager.HasBackup(detected))
+                _installBtn.Enabled = false;
+                _pathBadgeText = InstallerDiagnostics.UnextractedBadgeText;
+                _pathBadgeColor = StatusWarn;
+                AppendLog(InstallerDiagnostics.UnextractedArchiveMessage);
+            }
+
+            string prefilledDir = SteamLocator.NormalizePickedGameDirectory(initialGameDir);
+            if (!string.IsNullOrEmpty(prefilledDir))
+            {
+                _pathBox.Text = prefilledDir;
+                if (initialEnableAchievements.HasValue)
                 {
-                    BackupManifest mf = BackupManager.ReadManifestOrEmpty(detected);
-                    _achCheck.Checked = mf.AchievementsUi;
-                    AppendLog("Статус: русификатор уже установлен. Доступно переустановление или возврат оригинала.");
+                    _achCheck.Checked = initialEnableAchievements.Value;
                 }
-                else
+                else if (BackupManager.HasBackup(prefilledDir))
                 {
-                    AppendLog("Статус: готов к установке полной русской локализации (текст, 5 шрифтов, достижения).");
+                    _achCheck.Checked = BackupManager.ReadManifestOrEmpty(prefilledDir).AchievementsUi;
+                }
+                RefreshPathStatus();
+                AppendLog("Выбрана папка игры: " + prefilledDir);
+                if (InstallerDiagnostics.IsAdministrator())
+                {
+                    AppendLog("Установщик запущен с правами администратора.");
                 }
             }
             else
             {
-                RefreshPathStatus();
-                AppendLog("Автопоиск не нашёл установленную игру. Нажмите «Обзор...» и укажите папку We March as One.");
+                string detected = SteamLocator.AutoDetectGameDirectory(_explicitSteamDir, _appBaseDir);
+                if (!string.IsNullOrEmpty(detected))
+                {
+                    _pathBox.Text = detected;
+                    if (_payloadValid)
+                    {
+                        AppendLog("Папка игры найдена автоматически: " + detected);
+                    }
+                    if (BackupManager.HasBackup(detected))
+                    {
+                        BackupManifest mf = BackupManager.ReadManifestOrEmpty(detected);
+                        _achCheck.Checked = mf.AchievementsUi;
+                        if (_payloadValid)
+                        {
+                            AppendLog("Статус: русификатор уже установлен. Доступно обновление или возврат оригинала.");
+                        }
+                    }
+                    else if (_payloadValid)
+                    {
+                        AppendLog("Статус: готов к установке полной русской локализации (текст, 5 шрифтов, достижения).");
+                    }
+                }
+                else
+                {
+                    RefreshPathStatus();
+                    if (_payloadValid)
+                    {
+                        AppendLog("Автопоиск не нашёл установленную игру. Нажмите «Обзор...» и укажите папку We March as One.");
+                    }
+                }
+
+                if (initialEnableAchievements.HasValue)
+                {
+                    _achCheck.Checked = initialEnableAchievements.Value;
+                }
             }
+
             _logBox.SelectionStart = 0;
             _logBox.SelectionLength = 0;
         }
 
         private void RefreshPathStatus()
         {
-            string current = _pathBox.Text.Trim();
+            if (!_payloadValid)
+            {
+                _pathBadgeText = InstallerDiagnostics.UnextractedBadgeText;
+                _pathBadgeColor = StatusWarn;
+                Invalidate(_pathCardRect);
+                return;
+            }
+
+            string current = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
             if (SteamLocator.IsValidGameDirectory(current))
             {
-                if (BackupManager.HasBackup(current))
+                if (BackupManager.IsRussifierInstalled(current))
                 {
                     _pathBadgeText = "✓ Установлен русификатор (резервная копия сохранена)";
                     _pathBadgeColor = AccentGold;
@@ -312,26 +429,43 @@ namespace WmaoRuInstaller
             {
                 dlg.Description = "Выберите папку установленной игры We March as One";
                 dlg.ShowNewFolderButton = false;
-                if (SteamLocator.SafeDirectoryExists(_pathBox.Text))
+                string current = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
+                if (SteamLocator.SafeDirectoryExists(current))
                 {
-                    dlg.SelectedPath = _pathBox.Text;
+                    dlg.SelectedPath = current;
                 }
                 if (dlg.ShowDialog(this) == DialogResult.OK && !string.IsNullOrWhiteSpace(dlg.SelectedPath))
                 {
-                    _pathBox.Text = dlg.SelectedPath;
+                    _pathBox.Text = SteamLocator.NormalizePickedGameDirectory(dlg.SelectedPath);
                 }
             }
         }
 
         private void OnInstallClicked(object sender, EventArgs e)
         {
-            if (_isBusy) return;
-            string selectedDir = _pathBox.Text.Trim();
+            StartInstallFlow(_launchMode == GuiLaunchMode.UacInstall);
+        }
+
+        private void OnRestoreClicked(object sender, EventArgs e)
+        {
+            StartRestoreFlow(_launchMode == GuiLaunchMode.UacUninstall);
+        }
+
+        private void StartInstallFlow(bool skipUacRelaunch)
+        {
+            if (_isBusy || !_payloadValid) return;
+            string selectedDir = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
             bool enableAch = _achCheck.Checked;
+
+            if (!skipUacRelaunch && InstallerDiagnostics.NeedsElevationForGameDir(selectedDir))
+            {
+                TryElevateAndClose("--uac-install", selectedDir, enableAch);
+                return;
+            }
 
             SetBusy(true);
             _logBox.Clear();
-            AppendLog("Запуск установки русификатора v1.0...");
+            AppendLog("Запуск установки русификатора v1.1...");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -340,9 +474,11 @@ namespace WmaoRuInstaller
                     InstallOptions opts = new InstallOptions
                     {
                         GameDir = selectedDir,
+                        SteamDir = _explicitSteamDir,
                         EnableAchievementsUi = enableAch
                     };
-                    InstallerEngine.Install(_appBaseDir, opts, AppendLogThreadSafe);
+                    bool schemaSkipped;
+                    InstallerEngine.Install(_appBaseDir, opts, AppendLogThreadSafe, out schemaSkipped);
                     BeginInvoke((MethodInvoker)delegate
                     {
                         RefreshPathStatus();
@@ -353,18 +489,25 @@ namespace WmaoRuInstaller
                 {
                     BeginInvoke((MethodInvoker)delegate
                     {
-                        AppendLog("ОШИБКА: " + ex.Message);
-                        RefreshPathStatus();
-                        SetBusy(false);
+                        HandleWorkerFailure(ex, "--uac-install", skipUacRelaunch, selectedDir, enableAch);
                     });
                 }
             });
         }
 
-        private void OnRestoreClicked(object sender, EventArgs e)
+        private void StartRestoreFlow(bool skipUacRelaunch)
         {
             if (_isBusy) return;
-            string selectedDir = _pathBox.Text.Trim();
+            string selectedDir = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
+            bool enableAch = _achCheck.Checked;
+
+            if (!skipUacRelaunch
+                && (InstallerDiagnostics.NeedsElevationForGameDir(selectedDir)
+                    || NeedsSchemaElevationForRestore(selectedDir)))
+            {
+                TryElevateAndClose("--uac-uninstall", selectedDir, enableAch);
+                return;
+            }
 
             SetBusy(true);
             _logBox.Clear();
@@ -374,7 +517,7 @@ namespace WmaoRuInstaller
             {
                 try
                 {
-                    InstallerEngine.Restore(_appBaseDir, selectedDir, null, AppendLogThreadSafe);
+                    InstallerEngine.Restore(_appBaseDir, selectedDir, _explicitSteamDir, null, AppendLogThreadSafe);
                     BeginInvoke((MethodInvoker)delegate
                     {
                         RefreshPathStatus();
@@ -385,19 +528,110 @@ namespace WmaoRuInstaller
                 {
                     BeginInvoke((MethodInvoker)delegate
                     {
-                        AppendLog("ОШИБКА: " + ex.Message);
-                        RefreshPathStatus();
-                        SetBusy(false);
+                        HandleWorkerFailure(ex, "--uac-uninstall", skipUacRelaunch, selectedDir, enableAch);
                     });
                 }
             });
+        }
+
+        private bool NeedsSchemaElevationForRestore(string gameDir)
+        {
+            try
+            {
+                if (!BackupManager.HasBackup(gameDir))
+                {
+                    return false;
+                }
+                BackupManifest mf = BackupManager.ReadManifestOrEmpty(gameDir);
+                BackupEntry schEntry;
+                if (mf.Entries.TryGetValue(@"steam_stats\UserGameStatsSchema_5189160.bin", out schEntry)
+                    && !string.IsNullOrEmpty(schEntry.LiveOverridePath))
+                {
+                    return InstallerDiagnostics.NeedsElevationForTargetFile(schEntry.LiveOverridePath);
+                }
+            }
+            catch
+            {
+            }
+            return false;
+        }
+
+        private bool TryElevateAndClose(string uacFlag, string selectedDir, bool enableAch)
+        {
+            AppendLog("Запрос прав администратора Windows (UAC)...");
+            bool cancelled;
+            string err;
+            if (InstallerDiagnostics.TryRelaunchElevated(
+                uacFlag,
+                Application.ExecutablePath,
+                _appBaseDir,
+                selectedDir,
+                _explicitSteamDir,
+                enableAch,
+                out cancelled,
+                out err))
+            {
+                Close();
+                return true;
+            }
+
+            if (cancelled)
+            {
+                AppendLog("Запрос прав администратора отменён пользователем.");
+            }
+            else if (!string.IsNullOrEmpty(err))
+            {
+                AppendLog("Не удалось перезапустить от имени администратора: " + err);
+            }
+            return false;
+        }
+
+        private void HandleWorkerFailure(
+            Exception ex,
+            string uacFlag,
+            bool skipUacRelaunch,
+            string selectedDir,
+            bool enableAch)
+        {
+            RefreshPathStatus();
+            SetBusy(false);
+
+            if (ex is UnauthorizedAccessException)
+            {
+                if (!skipUacRelaunch && !InstallerDiagnostics.IsAdministrator())
+                {
+                    if (TryElevateAndClose(uacFlag, selectedDir, enableAch))
+                    {
+                        return;
+                    }
+                }
+
+                AppendLog(
+                    "ОШИБКА: Windows ограничила запись в папку с игрой (защита UAC или папка Program Files). ("
+                    + ex.Message + ")");
+                return;
+            }
+
+            AppendLog("ОШИБКА: " + InstallerDiagnostics.FormatUserError(ex));
         }
 
         private void OnSupportClicked(object sender, EventArgs e)
         {
             try
             {
-                Process.Start(new ProcessStartInfo(SupportUrl) { UseShellExecute = true });
+                Process.Start("https://pay.cloudtips.ru/p/240b8760");
+            }
+            catch (Exception ex)
+            {
+                AppendLog("Не удалось открыть браузер: " + ex.Message);
+            }
+        }
+
+        private void OnGithubClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(GithubUrl);
             }
             catch (Exception ex)
             {
@@ -408,7 +642,7 @@ namespace WmaoRuInstaller
         private void SetBusy(bool busy)
         {
             _isBusy = busy;
-            _installBtn.Enabled = !busy;
+            _installBtn.Enabled = !busy && _payloadValid;
             _restoreBtn.Enabled = !busy;
             _browseBtn.Enabled = !busy;
             _pathBox.ReadOnly = busy;
@@ -484,7 +718,6 @@ namespace WmaoRuInstaller
 
         private void DrawHeaderContent(Graphics g, Rectangle r)
         {
-            // Draw tabletop tactical formation emblem on the left
             int emblemX = r.X + S(18);
             int emblemY = r.Y + S(16);
             int emblemSize = S(46);
@@ -504,7 +737,7 @@ namespace WmaoRuInstaller
             int textX = emblemX + emblemSize + S(14);
             TextRenderer.DrawText(
                 g,
-                "WE MARCH AS ONE — РУСИФИКАТОР v1.0",
+                "WE MARCH AS ONE: РУСИФИКАТОР v1.1",
                 _fontHeaderTitle,
                 new Point(textX, r.Y + S(14)),
                 TextPrimary);
@@ -650,6 +883,7 @@ namespace WmaoRuInstaller
         {
             public bool IsPrimary;
             public float ScaleFactor = 1f;
+            public Color SurfaceBehind = Color.Empty;
             private bool _hover;
             private bool _pressed;
 
@@ -702,7 +936,10 @@ namespace WmaoRuInstaller
                 Graphics g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-                g.Clear(Parent != null ? Parent.BackColor : BgDark);
+                Color bg = SurfaceBehind != Color.Empty
+                    ? SurfaceBehind
+                    : (Parent != null ? Parent.BackColor : BgDark);
+                g.Clear(bg);
 
                 int radius = Math.Max(5, (int)Math.Round(7 * ScaleFactor));
                 int lipH = Math.Max(2, (int)Math.Round(3 * ScaleFactor));

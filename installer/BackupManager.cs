@@ -47,13 +47,53 @@ namespace WmaoRuInstaller
 
         public static bool HasBackup(string gameDir)
         {
-            return SteamLocator.SafeFileExists(GetManifestPath(gameDir));
+            string normalized = SteamLocator.NormalizeCandidatePath(gameDir);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return false;
+            }
+            return SteamLocator.SafeFileExists(GetManifestPath(normalized));
+        }
+
+        public static bool IsRussifierInstalled(string gameDir)
+        {
+            string normalized = SteamLocator.NormalizeCandidatePath(gameDir);
+            if (string.IsNullOrEmpty(normalized) || !HasBackup(normalized))
+            {
+                return false;
+            }
+            try
+            {
+                BackupManifest mf = ReadManifestOrEmpty(normalized);
+                BackupEntry resEntry;
+                if (!mf.Entries.TryGetValue(@"WeMarchAsOne_Data\resources.assets", out resEntry)
+                    || string.IsNullOrEmpty(resEntry.PatchedSha256))
+                {
+                    return false;
+                }
+                string liveRes = Path.Combine(normalized, @"WeMarchAsOne_Data\resources.assets");
+                if (!SteamLocator.SafeFileExists(liveRes))
+                {
+                    return false;
+                }
+                string liveSha = BinaryUtils.ComputeFileSha256Hex(liveRes);
+                return string.Equals(liveSha, resEntry.PatchedSha256, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static BackupManifest ReadManifestOrEmpty(string gameDir)
         {
             BackupManifest manifest = new BackupManifest();
-            string manifestPath = GetManifestPath(gameDir);
+            string normalized = SteamLocator.NormalizeCandidatePath(gameDir);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return manifest;
+            }
+            string manifestPath = GetManifestPath(normalized);
             if (!SteamLocator.SafeFileExists(manifestPath))
             {
                 return manifest;
@@ -177,7 +217,7 @@ namespace WmaoRuInstaller
                 CopyAndVerify(livePath, backupPath, liveSha);
                 if (log != null)
                 {
-                    log("  • Обнаружено обновление игры для " + key + " — резервная копия обновлена.");
+                    log("  • Обнаружено обновление игры для " + key + ": резервная копия обновлена.");
                 }
                 return new CleanSourceInfo
                 {
@@ -290,7 +330,7 @@ namespace WmaoRuInstaller
                     {
                         if (log != null)
                         {
-                            log("  • Примечание: не удалось откатить схему Steam (" + ex.Message + ").");
+                            log("  • Примечание: не удалось откатить схему Steam (" + InstallerDiagnostics.FormatUserError(ex) + ").");
                         }
                     }
                 }

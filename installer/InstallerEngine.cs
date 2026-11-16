@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace WmaoRuInstaller
@@ -8,6 +9,7 @@ namespace WmaoRuInstaller
     internal sealed class InstallOptions
     {
         public string GameDir;
+        public string SteamDir;
         public string SteamStatsDir;
         public bool EnableAchievementsUi = true;
         public bool SkipAssemblyPatch = false;
@@ -23,39 +25,25 @@ namespace WmaoRuInstaller
 
         public static void Install(string appBaseDir, InstallOptions options, Action<string> log)
         {
+            bool schemaAccessDenied;
+            Install(appBaseDir, options, log, out schemaAccessDenied);
+        }
+
+        public static void Install(
+            string appBaseDir,
+            InstallOptions options,
+            Action<string> log,
+            out bool schemaAccessDenied)
+        {
+            schemaAccessDenied = false;
             Stopwatch sw = Stopwatch.StartNew();
+            InstallerPayload loadedPayload = PayloadProvider.LoadPayload(appBaseDir, options.SkipAssemblyPatch);
+            TranslationPayload payload = loadedPayload.Translations;
 
-            string fontsDir = Path.Combine(appBaseDir, @"data\fonts");
-            string translationsPath = Path.Combine(appBaseDir, @"data\translations_ru.json");
-            string toolsDir = Path.Combine(appBaseDir, "tools");
-            string patcherExe = Path.Combine(toolsDir, "Patcher.exe");
-            string runtimeDll = Path.Combine(toolsDir, "RuModRuntime.dll");
-
-            if (!Directory.Exists(fontsDir))
-            {
-                throw new DirectoryNotFoundException("Не найдена папка шрифтов установщика: " + fontsDir);
-            }
-            if (!File.Exists(translationsPath))
-            {
-                throw new FileNotFoundException("Не найден файл переводов: " + translationsPath, translationsPath);
-            }
-            if (!options.SkipAssemblyPatch)
-            {
-                if (!File.Exists(patcherExe))
-                {
-                    throw new FileNotFoundException("Не найден инструмент патчинга сборки: " + patcherExe, patcherExe);
-                }
-                if (!File.Exists(runtimeDll))
-                {
-                    throw new FileNotFoundException("Не найден модуль интерфейса: " + runtimeDll, runtimeDll);
-                }
-            }
-
-            string gameDir = SteamLocator.ResolveGameDirectory(options.GameDir, appBaseDir);
+            string gameDir = SteamLocator.ResolveGameDirectory(options.GameDir, options.SteamDir, appBaseDir);
             SteamLocator.AssertGameClosed(gameDir);
 
             LogLine(log, "Папка игры: " + gameDir);
-            TranslationPayload payload = TranslationPayload.LoadFromFile(translationsPath);
 
             BackupManifest manifest = BackupManager.ReadManifestOrEmpty(gameDir);
             string stagingRoot = Path.Combine(BackupManager.GetBackupRoot(gameDir), "_staging");
@@ -84,7 +72,10 @@ namespace WmaoRuInstaller
 
                 LogLine(log, "[2/4] Встраивание 5 кириллических шрифтов в resources.assets...");
                 string stagedResources = Path.Combine(stagingRoot, RelResources);
-                int patchedFonts = AssetsFontPatcher.PatchResourcesFile(srcResources.BackupPath, fontsDir, stagedResources);
+                int patchedFonts = AssetsFontPatcher.PatchResourcesFromFileBytes(
+                    srcResources.BackupPath,
+                    loadedPayload.FontFiles,
+                    stagedResources);
                 LogLine(log, "  • Обновлено шрифтов: " + patchedFonts + " / 5");
 
                 LogLine(log, "[3/4] Локализация таблиц текста и обновление catalog.bin...");
@@ -112,11 +103,12 @@ namespace WmaoRuInstaller
                         : "поддержка кириллицы (без кнопки «Достижения»)";
                     LogLine(log, "[4/4] Модификация Assembly-CSharp.dll (" + modeLabel + ")...");
                     stagedAssembly = Path.Combine(stagingRoot, RelAssembly);
+                    string toolsWorkDir = MaterializeToolsDirectory(loadedPayload, stagingRoot);
                     string managedDir = Path.Combine(gameDir, @"WeMarchAsOne_Data\Managed");
                     RunAssemblyPatcher(
-                        patcherExe,
+                        Path.Combine(toolsWorkDir, "Patcher.exe"),
                         srcAssembly.BackupPath,
-                        runtimeDll,
+                        Path.Combine(toolsWorkDir, "RuModRuntime.dll"),
                         managedDir,
                         stagedAssembly,
                         options.EnableAchievementsUi,
@@ -127,10 +119,12 @@ namespace WmaoRuInstaller
                     LogLine(log, "[4/4] Модификация Assembly-CSharp.dll пропущена по флагу.");
                 }
 
-                // Optional Steam stats schema localization
                 CleanSourceInfo srcSteamSchema = null;
                 string stagedSteamSchema = null;
-                string steamStatsDir = SteamLocator.ResolveSteamStatsDirectory(options.SteamStatsDir);
+                string steamStatsDir = SteamLocator.ResolveSteamStatsDirectory(
+                    options.SteamStatsDir,
+                    options.SteamDir,
+                    gameDir);
                 if (!string.IsNullOrEmpty(steamStatsDir) && payload.SteamAchievements.Count > 0)
                 {
                     string liveSchemaPath = Path.Combine(steamStatsDir, SteamLocator.SchemaFileName);
@@ -147,16 +141,22 @@ namespace WmaoRuInstaller
                                 stagedSteamSchema);
                             LogLine(log, "  • Обновлена локальная схема достижений Steam (" + achCount + " шт.).");
                         }
+                        catch (UnauthorizedAccessException)
+                        {
+                            srcSteamSchema = null;
+                            stagedSteamSchema = null;
+                            schemaAccessDenied = true;
+                            LogLine(log, "  • Примечание: нет прав записи для схемы достижений Steam (Program Files). Текст, шрифты и экран достижений в игре установлены полностью.");
+                        }
                         catch (Exception ex)
                         {
                             srcSteamSchema = null;
                             stagedSteamSchema = null;
-                            LogLine(log, "  • Примечание: схема Steam пропущена (" + ex.Message + ").");
+                            LogLine(log, "  • Примечание: схема Steam пропущена (" + InstallerDiagnostics.FormatUserError(ex) + ").");
                         }
                     }
                 }
 
-                // Commit staged files atomically and record SHA-256 hashes
                 CommitStagedFile(stagedResources, srcResources, manifest, null);
                 CommitStagedFile(stagedBundle, srcBundle, manifest, null);
                 CommitStagedFile(stagedCatalog, srcCatalog, manifest, null);
@@ -170,9 +170,14 @@ namespace WmaoRuInstaller
                     {
                         CommitStagedFile(stagedSteamSchema, srcSteamSchema, manifest, srcSteamSchema.LivePath);
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+                        schemaAccessDenied = true;
+                        LogLine(log, "  • Примечание: нет прав записи для схемы достижений Steam (Program Files). Текст, шрифты и экран достижений в игре установлены полностью.");
+                    }
                     catch (Exception ex)
                     {
-                        LogLine(log, "  • Примечание: не удалось записать схему Steam (" + ex.Message + ").");
+                        LogLine(log, "  • Примечание: не удалось записать схему Steam (" + InstallerDiagnostics.FormatUserError(ex) + ").");
                     }
                 }
 
@@ -204,13 +209,29 @@ namespace WmaoRuInstaller
 
         public static void Restore(string appBaseDir, string explicitGameDir, string explicitSteamStatsDir, Action<string> log)
         {
+            Restore(appBaseDir, explicitGameDir, null, explicitSteamStatsDir, log);
+        }
+
+        public static void Restore(
+            string appBaseDir,
+            string explicitGameDir,
+            string explicitSteamDir,
+            string explicitSteamStatsDir,
+            Action<string> log)
+        {
             Stopwatch sw = Stopwatch.StartNew();
-            string gameDir = SteamLocator.ResolveGameDirectory(explicitGameDir, appBaseDir);
+            string gameDir = SteamLocator.ResolveGameDirectory(explicitGameDir, explicitSteamDir, appBaseDir);
             SteamLocator.AssertGameClosed(gameDir);
+
+            string resolvedStatsDir = explicitSteamStatsDir;
+            if (string.IsNullOrWhiteSpace(resolvedStatsDir) && !string.IsNullOrWhiteSpace(explicitSteamDir))
+            {
+                resolvedStatsDir = SteamLocator.ResolveSteamStatsDirectory(null, explicitSteamDir, gameDir);
+            }
 
             LogLine(log, "Папка игры: " + gameDir);
             LogLine(log, "Восстановление нетронутых оригинальных файлов из резервной копии...");
-            int count = BackupManager.RestoreOriginals(gameDir, explicitSteamStatsDir, log);
+            int count = BackupManager.RestoreOriginals(gameDir, resolvedStatsDir, log);
             sw.Stop();
             LogLine(
                 log,
@@ -218,6 +239,52 @@ namespace WmaoRuInstaller
                     "Готово! Восстановлено оригинальных файлов: {0} (проверка SHA-256 пройдена, {1:0.00} сек.).",
                     count,
                     sw.Elapsed.TotalSeconds));
+        }
+
+        public static int RunStatusCli(
+            string appBaseDir,
+            string explicitGameDir,
+            string explicitSteamDir,
+            string explicitSteamStatsDir)
+        {
+            InstallerPayload payload = PayloadProvider.LoadPayload(appBaseDir, true);
+            string gameDir = !string.IsNullOrWhiteSpace(explicitGameDir)
+                ? SteamLocator.NormalizePickedGameDirectory(explicitGameDir)
+                : SteamLocator.AutoDetectGameDirectory(explicitSteamDir, appBaseDir);
+            bool validGame = SteamLocator.IsValidGameDirectory(gameDir);
+
+            string steamDir = SteamLocator.DetectSteamDirectory(explicitSteamDir, validGame ? gameDir : null);
+            string statsDir = SteamLocator.ResolveSteamStatsDirectory(explicitSteamStatsDir, steamDir, validGame ? gameDir : null);
+
+            int totalAch = payload.Translations.SteamAchievements.Count > 0
+                ? payload.Translations.SteamAchievements.Count
+                : 30;
+            int unlocked = SteamUserStatsReader.ReadUnlockedCount(statsDir, totalAch);
+
+            bool hasBackup = validGame && BackupManager.HasBackup(gameDir);
+            bool installed = validGame && BackupManager.IsRussifierInstalled(gameDir);
+            bool achUi = hasBackup ? BackupManager.ReadManifestOrEmpty(gameDir).AchievementsUi : true;
+
+            Console.WriteLine("Version: " + payload.Version);
+            Console.WriteLine("GameDir: " + (validGame ? gameDir : "NOT_FOUND"));
+            Console.WriteLine("SteamDir: " + (!string.IsNullOrEmpty(steamDir) ? steamDir : "NOT_FOUND"));
+            Console.WriteLine("Installed: " + (installed ? "true" : "false"));
+            Console.WriteLine("AchievementsUi: " + (achUi ? "true" : "false"));
+            Console.WriteLine("BackupManifest: " + (hasBackup ? "present" : "absent"));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "AchievementsUnlocked: {0}/{1}", unlocked, totalAch));
+
+            return validGame ? 0 : 2;
+        }
+
+        private static string MaterializeToolsDirectory(InstallerPayload payload, string stagingRoot)
+        {
+            string toolsDir = Path.Combine(stagingRoot, "_tools");
+            Directory.CreateDirectory(toolsDir);
+            foreach (KeyValuePair<string, byte[]> kv in payload.ToolFiles)
+            {
+                File.WriteAllBytes(Path.Combine(toolsDir, kv.Key), kv.Value);
+            }
+            return toolsDir;
         }
 
         private static void CommitStagedFile(
@@ -308,15 +375,7 @@ namespace WmaoRuInstaller
 
         private static string QuoteArg(string value)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return "\"\"";
-            }
-            if (value.EndsWith("\\", StringComparison.Ordinal))
-            {
-                return "\"" + value + "\\\"";
-            }
-            return "\"" + value + "\"";
+            return InstallerDiagnostics.QuoteCommandLineArg(value);
         }
 
         private static void LogLine(Action<string> log, string message)
