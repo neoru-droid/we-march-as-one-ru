@@ -1,12 +1,12 @@
-# We March as One: Русификатор
+# We March as One · Русификатор
 
-![We March as One: Русификатор](docs/screenshots/cover_wide.png)
+Кампания на 50 уровней, пять игровых шрифтов с кириллицей и экран 30 достижений.
 
-Русский перевод текста, 5 родных шрифтов и встроенный экран достижений в меню игры для **We March as One**.
+**[Скачать перевод v1.1 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.1.0/WeMarchAsOne-RU-v1.1.zip)** · [Как установить](#установка)
 
-**[Скачать WeMarchAsOne-RU-v1.1.zip](https://github.com/neoru-droid/we-march-as-one-ru/releases/latest)**
+Проверенная сборка Steam: 26651298.
 
-[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059) · [Тема в Steam](https://steamcommunity.com/app/5189160/discussions/0/564799430246758320/) · [Boosty](https://boosty.to/cd_tixo) · [Все переводы автора](https://github.com/neoru-droid)
+![Русские названия отрядов на экране найма](docs/screenshots/cover_wide.png)
 
 ## Установка
 1. Закройте игру, распакуйте архив и запустите `WeMarchAsOne-RU-Setup.exe` -> **«Установить русификатор»**.
@@ -17,21 +17,36 @@
 
 ## Скриншоты
 
-| Главное меню | Выбор режима |
-| :---: | :---: |
-| ![Главное меню](docs/screenshots/guide_1_main_menu.png) | ![Выбор режима](docs/screenshots/guide_2_modes.png) |
+<details>
+<summary>Открыть игровые кадры</summary>
 
-| Достижения | Древо навыков |
-| :---: | :---: |
-| ![Достижения](docs/screenshots/guide_3_achievements.png) | ![Древо навыков](docs/screenshots/guide_4_skill_tree.png) |
+**Главное меню**
 
-| Кампания | Установщик |
-| :---: | :---: |
-| ![Кампания](docs/screenshots/guide_5_battle.png) | ![Установщик](docs/screenshots/guide_6_installer.png) |
+![Главное меню](docs/screenshots/guide_1_main_menu.png)
+
+**Выбор режима**
+
+![Выбор режима](docs/screenshots/guide_2_modes.png)
+
+**Выбор уровня кампании**
+
+![Выбор уровня кампании](docs/screenshots/guide_5_battle.png)
+
+**Достижения**
+
+![Достижения](docs/screenshots/guide_3_achievements.png)
+
+**Древо навыков**
+
+![Древо навыков](docs/screenshots/guide_4_skill_tree.png)
+
+</details>
 
 ## История обновлений
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
-- **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры.
+- **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
+
+[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059) · [Тема в Steam](https://steamcommunity.com/app/5189160/discussions/0/564799430246758320/)
 
 <a id="support"></a>
 ## Поддержать
