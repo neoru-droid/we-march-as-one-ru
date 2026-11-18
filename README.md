@@ -46,7 +46,7 @@
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
 - **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
 
-[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059) · [Тема в Steam](https://steamcommunity.com/app/5189160/discussions/0/564799430246758320/)
+[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Установка и обсуждение в руководстве Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059)
 
 <a id="support"></a>
 ## Поддержать
