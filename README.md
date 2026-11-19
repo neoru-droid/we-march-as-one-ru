@@ -6,7 +6,7 @@
 
 Проверенная сборка Steam: 26651298.
 
-![Русские названия отрядов на экране найма](docs/screenshots/cover_wide.png)
+![We March as One · Русификатор](docs/screenshots/cover_wide.png)
 
 ## Установка
 1. Закройте игру, распакуйте архив и запустите `WeMarchAsOne-RU-Setup.exe` -> **«Установить русификатор»**.
@@ -43,7 +43,7 @@
 </details>
 
 ## История обновлений
-- **[v1.2](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.2.0)** — Уточнены подсказки навыков и песочницы. Установщик различает установку и обновление перевода.
+- **[v1.2](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.2.0)** - уточнены подсказки навыков и песочницы. Установщик различает установку и обновление перевода.
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
 - **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
 
