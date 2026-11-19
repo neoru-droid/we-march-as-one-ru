@@ -28,9 +28,9 @@ namespace WmaoRuInstaller
         private static readonly Color InputBg = Color.FromArgb(0x1B, 0x1A, 0x16);
         private static readonly Color TextPrimary = Color.FromArgb(0xE8, 0xE6, 0xE1);
         private static readonly Color TextMuted = Color.FromArgb(0xA6, 0xA8, 0xB3);
-        private static readonly Color PrimaryBtnFill = Color.FromArgb(0xE8, 0xE6, 0xE1);
-        private static readonly Color PrimaryBtnHover = Color.FromArgb(0xF5, 0xF4, 0xF0);
-        private static readonly Color PrimaryBtnLip = Color.FromArgb(0xB8, 0xB4, 0xA8);
+        private static readonly Color PrimaryBtnFill = Color.FromArgb(0xAB, 0xEA, 0xCB);
+        private static readonly Color PrimaryBtnHover = Color.FromArgb(0xC3, 0xF2, 0xDC);
+        private static readonly Color PrimaryBtnLip = Color.FromArgb(0x72, 0xAB, 0x93);
         private static readonly Color PrimaryBtnText = Color.FromArgb(0x23, 0x21, 0x1C);
         private static readonly Color SecondaryBtnFill = Color.FromArgb(0x46, 0x48, 0x52);
         private static readonly Color SecondaryBtnHover = Color.FromArgb(0x55, 0x58, 0x64);
@@ -63,6 +63,8 @@ namespace WmaoRuInstaller
         private TabletopButton _installBtn;
         private TabletopButton _restoreBtn;
         private TextBox _logBox;
+        private Button _detailsBtn;
+        private bool _detailsOpen;
         private TabletopButton _supportBtn;
         private TabletopButton _githubBtn;
 
@@ -94,11 +96,17 @@ namespace WmaoRuInstaller
             string explicitSteamDir,
             bool? initialEnableAchievements,
             GuiLaunchMode launchMode)
+            : this(appBaseDir, initialGameDir, explicitSteamDir, initialEnableAchievements, launchMode, DetectDpiScale())
+        {
+        }
+
+        internal SetupForm(string appBaseDir, string initialGameDir, string explicitSteamDir,
+            bool? initialEnableAchievements, GuiLaunchMode launchMode, float dpiScale)
         {
             _appBaseDir = appBaseDir;
             _explicitSteamDir = explicitSteamDir;
             _launchMode = launchMode;
-            _scale = DetectDpiScale();
+            _scale = dpiScale;
 
             SetStyle(
                 ControlStyles.AllPaintingInWmPaint
@@ -113,8 +121,9 @@ namespace WmaoRuInstaller
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = BgDark;
             ForeColor = TextPrimary;
-            Text = "We March as One: Русификатор v1.1";
-            ClientSize = new Size(S(696), S(564));
+            Text = "We March as One: Русификатор v1.2";
+            int availableWidth = Screen.FromControl(this).WorkingArea.Width - (Width - ClientSize.Width) - S(8);
+            ClientSize = new Size(Math.Min(S(696), availableWidth), S(394));
 
             _generatedIcon = BuildTacticalIcon();
             if (_generatedIcon != null)
@@ -125,6 +134,7 @@ namespace WmaoRuInstaller
             InitFonts();
             BuildLayout();
             InitializePathAndLog(initialGameDir, initialEnableAchievements);
+            ActiveControl = _installBtn.Enabled ? (Control)_installBtn : _browseBtn;
         }
 
         protected override void OnShown(EventArgs e)
@@ -227,6 +237,8 @@ namespace WmaoRuInstaller
             _achCheck = new TabletopCheckRow
             {
                 Checked = true,
+                AccessibleName = "Добавить экран достижений",
+                AccessibleRole = AccessibleRole.CheckButton,
                 TitleText = "Добавить экран «Достижения» в главное меню игры",
                 SubtitleText = "Встраивает русскую панель 30 достижений со статусом из Steam",
                 TitleFont = _fontBodyBold,
@@ -248,7 +260,7 @@ namespace WmaoRuInstaller
 
             _installBtn = new TabletopButton
             {
-                Text = "УСТАНОВИТЬ РУСИФИКАТОР",
+                Text = "Установить русификатор",
                 Font = _fontPrimaryBtn,
                 IsPrimary = true,
                 ScaleFactor = _scale,
@@ -259,7 +271,7 @@ namespace WmaoRuInstaller
 
             _restoreBtn = new TabletopButton
             {
-                Text = "ВЕРНУТЬ ОРИГИНАЛ",
+                Text = "Вернуть оригинал",
                 Font = _fontSecondaryBtn,
                 IsPrimary = false,
                 ScaleFactor = _scale,
@@ -268,7 +280,15 @@ namespace WmaoRuInstaller
             _restoreBtn.Click += OnRestoreClicked;
             Controls.Add(_restoreBtn);
 
-            _logCardRect = new Rectangle(pad, S(348), contentW, S(160));
+            _detailsBtn = new Button
+            {
+                Bounds = new Rectangle(pad, S(348), S(174), S(31)),
+                BackColor = CardBg, ForeColor = TextPrimary, FlatStyle = FlatStyle.Flat,
+                Font = _fontBody
+            };
+            _detailsBtn.Click += delegate { SetDetailsOpen(!_detailsOpen); };
+            Controls.Add(_detailsBtn);
+            _logCardRect = new Rectangle(pad, S(391), contentW, S(160));
             _logBox = new TextBox
             {
                 Multiline = true,
@@ -283,7 +303,7 @@ namespace WmaoRuInstaller
             };
             Controls.Add(_logBox);
 
-            int footerY = S(520);
+            int footerY = _detailsBtn.Top;
             int footerH = S(30);
             int githubW = S(96);
             int supportW = S(196);
@@ -309,6 +329,27 @@ namespace WmaoRuInstaller
             };
             _supportBtn.Click += OnSupportClicked;
             Controls.Add(_supportBtn);
+            SetDetailsOpen(false);
+        }
+
+        private void SetDetailsOpen(bool open)
+        {
+            _detailsOpen = open;
+            _detailsBtn.Text = open ? "Скрыть подробности" : "Подробности";
+            _logBox.Visible = _githubBtn.Visible = _supportBtn.Visible = open;
+            Rectangle area = Screen.FromControl(this).WorkingArea;
+            bool onScreen = Visible && area.IntersectsWith(Bounds);
+            int availableHeight = area.Height - (Height - ClientSize.Height) - S(8);
+            int clientHeight = open ? Math.Max(S(454), Math.Min(S(565), availableHeight)) : S(394);
+            if (open)
+            {
+                _logCardRect.Height = clientHeight - S(12) - _logCardRect.Top;
+                _logBox.Height = _logCardRect.Height - S(40);
+            }
+            ClientSize = new Size(ClientSize.Width, clientHeight);
+            if (onScreen && Bottom > area.Bottom) Top = Math.Max(area.Top, area.Bottom - Height);
+
+            Invalidate();
         }
 
         private void InitializePathAndLog(string initialGameDir, bool? initialEnableAchievements)
@@ -381,12 +422,21 @@ namespace WmaoRuInstaller
                 }
             }
 
+            RefreshPathStatus();
+            if (!_payloadValid) SetDetailsOpen(true);
             _logBox.SelectionStart = 0;
             _logBox.SelectionLength = 0;
         }
 
         private void RefreshPathStatus()
         {
+            string current = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
+            bool valid = SteamLocator.IsValidGameDirectory(current);
+            bool hasBackup = valid && BackupManager.HasBackup(current);
+            bool installed = hasBackup && BackupManager.IsRussifierInstalled(current);
+            _installBtn.Enabled = !_isBusy && _payloadValid && valid;
+            _restoreBtn.Enabled = !_isBusy && hasBackup;
+            _installBtn.Text = _isBusy ? "Подождите…" : (installed ? "Обновить русификатор" : "Установить русификатор");
             if (!_payloadValid)
             {
                 _pathBadgeText = InstallerDiagnostics.UnextractedBadgeText;
@@ -395,17 +445,16 @@ namespace WmaoRuInstaller
                 return;
             }
 
-            string current = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
-            if (SteamLocator.IsValidGameDirectory(current))
+            if (valid)
             {
-                if (BackupManager.IsRussifierInstalled(current))
+                if (installed)
                 {
-                    _pathBadgeText = "✓ Установлен русификатор (резервная копия сохранена)";
+                    _pathBadgeText = "Русификатор установлен";
                     _pathBadgeColor = AccentGold;
                 }
                 else
                 {
-                    _pathBadgeText = "✓ Файлы игры найдены";
+                    _pathBadgeText = "Готово к установке";
                     _pathBadgeColor = StatusOk;
                 }
             }
@@ -456,6 +505,7 @@ namespace WmaoRuInstaller
             if (_isBusy || !_payloadValid) return;
             string selectedDir = SteamLocator.NormalizePickedGameDirectory(_pathBox.Text);
             bool enableAch = _achCheck.Checked;
+            bool updating = BackupManager.IsRussifierInstalled(selectedDir);
 
             if (!skipUacRelaunch && InstallerDiagnostics.NeedsElevationForGameDir(selectedDir))
             {
@@ -465,7 +515,7 @@ namespace WmaoRuInstaller
 
             SetBusy(true);
             _logBox.Clear();
-            AppendLog("Запуск установки русификатора v1.1...");
+            AppendLog("Запуск установки русификатора v1.2...");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -481,8 +531,14 @@ namespace WmaoRuInstaller
                     InstallerEngine.Install(_appBaseDir, opts, AppendLogThreadSafe, out schemaSkipped);
                     BeginInvoke((MethodInvoker)delegate
                     {
-                        RefreshPathStatus();
                         SetBusy(false);
+                        _pathBadgeText = updating ? "Русификатор обновлён" : "Русификатор установлен";
+                        if (schemaSkipped)
+                        {
+                            _pathBadgeText += " · Проверьте сведения о Steam";
+                            SetDetailsOpen(true);
+                        }
+                        Invalidate(_pathCardRect);
                     });
                 }
                 catch (Exception ex)
@@ -520,8 +576,9 @@ namespace WmaoRuInstaller
                     InstallerEngine.Restore(_appBaseDir, selectedDir, _explicitSteamDir, null, AppendLogThreadSafe);
                     BeginInvoke((MethodInvoker)delegate
                     {
-                        RefreshPathStatus();
                         SetBusy(false);
+                        _pathBadgeText = "Оригинальные файлы восстановлены";
+                        Invalidate(_pathCardRect);
                     });
                 }
                 catch (Exception ex)
@@ -577,10 +634,12 @@ namespace WmaoRuInstaller
 
             if (cancelled)
             {
+                SetDetailsOpen(true);
                 AppendLog("Запрос прав администратора отменён пользователем.");
             }
             else if (!string.IsNullOrEmpty(err))
             {
+                SetDetailsOpen(true);
                 AppendLog("Не удалось перезапустить от имени администратора: " + err);
             }
             return false;
@@ -593,8 +652,8 @@ namespace WmaoRuInstaller
             string selectedDir,
             bool enableAch)
         {
-            RefreshPathStatus();
             SetBusy(false);
+            SetDetailsOpen(true);
 
             if (ex is UnauthorizedAccessException)
             {
@@ -642,8 +701,7 @@ namespace WmaoRuInstaller
         private void SetBusy(bool busy)
         {
             _isBusy = busy;
-            _installBtn.Enabled = !busy && _payloadValid;
-            _restoreBtn.Enabled = !busy;
+            RefreshPathStatus();
             _browseBtn.Enabled = !busy;
             _pathBox.ReadOnly = busy;
             _achCheck.Enabled = !busy;
@@ -700,6 +758,7 @@ namespace WmaoRuInstaller
 
             DrawCard(g, _optionsCardRect);
 
+            if (!_detailsOpen) return;
             DrawCard(g, _logCardRect);
             TextRenderer.DrawText(
                 g,
@@ -712,7 +771,7 @@ namespace WmaoRuInstaller
                 g,
                 "Steam AppID 5189160  ·  SIL OFL 1.1 + MIT",
                 _fontSmall,
-                new Point(S(22), S(527)),
+                new Point(_logCardRect.Right - S(226), _logCardRect.Y + S(9)),
                 TextMuted);
         }
 
@@ -737,14 +796,14 @@ namespace WmaoRuInstaller
             int textX = emblemX + emblemSize + S(14);
             TextRenderer.DrawText(
                 g,
-                "WE MARCH AS ONE: РУСИФИКАТОР v1.1",
+                "We March as One · Русификатор v1.2",
                 _fontHeaderTitle,
                 new Point(textX, r.Y + S(14)),
                 TextPrimary);
 
             TextRenderer.DrawText(
                 g,
-                "Полный перевод всего текста игры, шрифты 1:1 и экран достижений  ·  автор: neoru-droid",
+                "Русский текст и пять игровых шрифтов с кириллицей",
                 _fontHeaderSub,
                 new Point(textX + S(1), r.Y + S(44)),
                 TextMuted);
@@ -879,7 +938,36 @@ namespace WmaoRuInstaller
             base.Dispose(disposing);
         }
 
-        private sealed class TabletopButton : Control
+        private class KeyboardControl : Control
+        {
+            protected override bool ProcessDialogKey(Keys keyData)
+            {
+                if (Enabled && (keyData == Keys.Enter || keyData == Keys.Space))
+                {
+                    OnClick(EventArgs.Empty);
+                    return true;
+                }
+                return base.ProcessDialogKey(keyData);
+            }
+            protected override void OnKeyDown(KeyEventArgs e)
+            {
+                base.OnKeyDown(e);
+                if (Enabled && (e.KeyData == Keys.Space || e.KeyData == Keys.Enter))
+                {
+                    e.SuppressKeyPress = true;
+                    OnClick(EventArgs.Empty);
+                }
+            }
+            protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+            protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
+            protected void DrawKeyFocus(Graphics g)
+            {
+                if (Focused && ShowFocusCues)
+                    ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(ClientRectangle, -3, -3), ForeColor, BackColor);
+            }
+        }
+
+        private sealed class TabletopButton : KeyboardControl
         {
             public bool IsPrimary;
             public float ScaleFactor = 1f;
@@ -975,10 +1063,11 @@ namespace WmaoRuInstaller
                     faceRect,
                     fg,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                DrawKeyFocus(g);
             }
         }
 
-        private sealed class TabletopCheckRow : Control
+        private sealed class TabletopCheckRow : KeyboardControl
         {
             public bool Checked = true;
             public string TitleText = "";
@@ -1079,6 +1168,7 @@ namespace WmaoRuInstaller
                     SubtitleFont ?? Font,
                     new Point(textX, (int)Math.Round(25 * ScaleFactor)),
                     TextMuted);
+                DrawKeyFocus(g);
             }
         }
     }

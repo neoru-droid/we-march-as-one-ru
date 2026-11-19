@@ -10,7 +10,7 @@ namespace WmaoRuInstaller
 {
     internal sealed class InstallerPayload
     {
-        public string Version = "1.1.0";
+        public string Version = "1.2.0";
         public int AppId = 5189160;
         public bool IsEmbedded;
         public TranslationPayload Translations;

@@ -333,7 +333,7 @@ namespace WmaoRuInstaller
 
         private static void PrintCliHelp()
         {
-            Console.WriteLine("We March as One: Русификатор v1.1 (автор: neoru-droid)");
+            Console.WriteLine("We March as One: Русификатор v1.2 (автор: neoru-droid)");
             Console.WriteLine("Использование:");
             Console.WriteLine("  WeMarchAsOne-RU-Setup.exe                            Запуск графического окна");
             Console.WriteLine("  WeMarchAsOne-RU-Setup.exe --status [параметры]       Проверка состояния и путей");

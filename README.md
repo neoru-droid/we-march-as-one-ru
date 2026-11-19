@@ -2,7 +2,7 @@
 
 Кампания на 50 уровней, пять игровых шрифтов с кириллицей и экран 30 достижений.
 
-**[Скачать перевод v1.1 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.1.0/WeMarchAsOne-RU-v1.1.zip)** · [Как установить](#установка)
+**[Скачать перевод v1.2 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.2.0/WeMarchAsOne-RU-v1.2.zip)** · [Как установить](#установка)
 
 Проверенная сборка Steam: 26651298.
 
@@ -43,6 +43,7 @@
 </details>
 
 ## История обновлений
+- **[v1.2](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.2.0)** — Уточнены подсказки навыков и песочницы. Установщик различает установку и обновление перевода.
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
 - **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
 
