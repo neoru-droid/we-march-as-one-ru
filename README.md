@@ -1,17 +1,18 @@
 # We March as One · Русификатор
 
-Кампания на 50 уровней, пять игровых шрифтов с кириллицей и экран 30 достижений.
+Кампания на 50 уровней, пять адаптированных игровых шрифтов с кириллицей, древо навыков и экран 30 достижений на русском языке без обрезки подписей.
 
-**[Скачать перевод v1.2 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.2.0/WeMarchAsOne-RU-v1.2.zip)** · [Как установить](#установка)
+- **[Скачать перевод v1.2 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.2.0/WeMarchAsOne-RU-v1.2.zip)** · [Как установить](#установка)
+- **[Единая страница релиза с мод-меню на Boosty (бесплатно, без регистрации)](https://boosty.to/cd_tixo/posts/73fae114-79d9-4305-99cc-8d8af1d157ce)**
 
-Проверенная сборка Steam: 26651298.
+Проверено на сборке Steam `26651298` для **Windows** и **Steam Deck / Linux**. Достижения Steam продолжают открываться как обычно, а кнопка удаления в любой момент возвращает чистые оригинальные файлы игры.
 
 ![We March as One · Русификатор](docs/screenshots/cover_wide.png)
 
 ## Установка
 1. Закройте игру, распакуйте архив и запустите `WeMarchAsOne-RU-Setup.exe` -> **«Установить русификатор»**.
-2. **Steam Deck / Linux:** распакуйте архив и запустите `sh install-steamdeck.sh` рядом с `.exe`.
-3. Кнопка **«Вернуть оригинал»** удаляет перевод. После обновлений игры запустите установку повторно.
+2. **Steam Deck / Linux:** распакуйте все файлы архива в одну папку и выполните `sh install-steamdeck.sh` рядом с `.exe`.
+3. Кнопка **«Вернуть оригинал»** удаляет перевод в один клик. После обновлений игры запустите установку повторно. Перевод совместим с [внутриигровым мод-меню](https://github.com/neoru-droid/we-march-as-one-trainer-ru) (оба модуля ставятся и удаляются независимо в любом порядке).
 
 *(Окно SmartScreen на Windows: «Подробнее» -> «Выполнить в любом случае».)*
 
@@ -47,16 +48,18 @@
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
 - **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый релиз перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
 
-[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059) · [Обсудить перевод в Steam](https://steamcommunity.com/app/5189160/discussions/0/564799430246671573/)
+[Все версии](https://github.com/neoru-droid/we-march-as-one-ru/releases) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059) · [Обсудить перевод в Steam](https://steamcommunity.com/app/5189160/discussions/0/564799430246671573/) · [Парное мод-меню](https://github.com/neoru-droid/we-march-as-one-trainer-ru)
 
 <a id="support"></a>
 ## Поддержать
-- **[Boosty](https://boosty.to/cd_tixo)** (все релизы и выбор следующих игр)
-- **[Чаевые через CloudTips (СБП / карта)](https://pay.cloudtips.ru/p/240b8760)**
+- **[Каталог релизов на Boosty](https://boosty.to/cd_tixo/posts/2a55d7e9-0f53-4d93-9f66-280981158dec)** (все бесплатные выпуски и обновления)
+- **[Разовые чаевые через CloudTips (СБП / карта)](https://pay.cloudtips.ru/p/240b8760)**
 
 Перевод сделан с помощью нейросети и проверен в игре. Найдёте опечатку или косяк - пишите в [Issues](https://github.com/neoru-droid/we-march-as-one-ru/issues), поправлю.
 
 ## Другие переводы
+- [Playrooms](https://github.com/neoru-droid/playrooms-ru)
+- [Deleted Wiki: Clean Up the Lost Files](https://github.com/neoru-droid/deleted-wiki-ru)
 - [Frontier Tale](https://github.com/neoru-droid/frontier-tale-ru)
 - [Zombies Aren't Real](https://github.com/neoru-droid/zombies-arent-real-ru)
 
