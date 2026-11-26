@@ -1,19 +1,18 @@
 # We March as One · Русификатор
 
-Русский перевод `v1.2` со всеми 5 шрифтами, экран 30 достижений и сборка 2-в-1 с мод-меню для **We March as One** (сборка Steam `26651298`, Windows и Steam Deck).
+Русский перевод `v1.2` со всеми 5 шрифтами и экраном 30 достижений для **We March as One** (сборка Steam `26651298`, Windows и Steam Deck).
 
 ## Скачать
-- **[Сборка 2-в-1 (русификатор + мод-меню) и обновления на Boosty](https://boosty.to/cd_tixo/posts/73fae114-79d9-4305-99cc-8d8af1d157ce?utm_source=github&utm_medium=readme&utm_campaign=we_march_as_one):** единый установщик с выбором нужных модулей и обновлениями под патчи.
-- **[Базовый русификатор v1.2 на GitHub Releases](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.2.0):** только перевод текста, шрифтов и экрана достижений · [Как установить](#установка) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059)
+**[Скачать русификатор v1.2 (ZIP)](https://github.com/neoru-droid/we-march-as-one-ru/releases/download/v1.2.0/WeMarchAsOne-RU-v1.2.zip)** · [Как установить](#установка) · [Руководство в Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3840161059)
 
 Проверено на сборке Steam `26651298` для **Windows** и **Steam Deck / Linux**.
 
 ![We March as One · Русификатор](docs/screenshots/cover_wide.png)
 
 ## Установка
-1. **Windows:** закройте игру, распакуйте архив и запустите `WeMarchAsOne-RU-Setup.exe` -> **«Установить русификатор»** (или `WeMarchAsOne-Full-Setup.exe` в полной сборке «2-в-1» с Boosty).
+1. **Windows:** закройте игру, распакуйте архив и запустите `WeMarchAsOne-RU-Setup.exe` -> **«Установить русификатор»**.
 2. **Steam Deck / Linux:** распакуйте все файлы архива в одну папку и выполните `sh install-steamdeck.sh`.
-3. Кнопка **«Вернуть оригинал»** убирает перевод через тот же установщик. В издании «2-в-1» модули можно ставить и удалять раздельно в любом порядке. После обновлений игры запустите установку повторно.
+3. Кнопка **«Вернуть оригинал»** убирает перевод через тот же установщик. После обновлений игры запустите установку повторно.
 
 *(Окно SmartScreen на Windows: «Подробнее» -> «Выполнить в любом случае».)*
 
@@ -49,13 +48,11 @@
 - **[v1.1](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.1.0)** - обновлённый установщик с быстрыми ссылками и поддержкой Steam Deck.
 - **[v1.0](https://github.com/neoru-droid/we-march-as-one-ru/releases/tag/v1.0.0)** - первый выпуск перевода 50 уровней кампании, 5 шрифтов и экрана 30 достижений в меню игры. [Обложка v1.0](docs/screenshots/cover_v1.0.png) · [Установщик v1.0](docs/screenshots/guide_6_installer.png)
 
-## Обратная связь и проекты автора
+## Обратная связь
 
 Перевод сделан нейросетью и проверен в игре. Найдёте опечатку или косяк - пишите в [Issues](https://github.com/neoru-droid/we-march-as-one-ru/issues), поправлю.
 
-Предложить игру на перевод в приоритетную очередь или заказать разбор вне очереди можно на [странице Boosty](https://boosty.to/cd_tixo?utm_source=github&utm_medium=readme&utm_campaign=order_game).
-
-Все проекты автора: [сайт каталога](https://neoru-droid.github.io/) · [каталог на Boosty](https://boosty.to/cd_tixo/posts/2a55d7e9-0f53-4d93-9f66-280981158dec?utm_source=github&utm_medium=readme&utm_campaign=we_march_as_one) · [профиль на GitHub](https://github.com/neoru-droid)
+[Все переводы автора в Steam](https://steamcommunity.com/id/cd-_-TiXo/myworkshopfiles/?section=guides) · [Все версии на GitHub](https://github.com/neoru-droid/we-march-as-one-ru/releases)
 
 Лицензия: [MIT](LICENSE) (шрифты в `fonts/` под SIL OFL 1.1)
 
